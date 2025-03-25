@@ -1,36 +1,37 @@
--- Domain Monitoring System Database Schema
-
--- Drop tables if they exist (for clean setup)
-DROP TABLE IF EXISTS scans;
-DROP TABLE IF EXISTS users;
+-- Domain Monitoring System - Consolidated Schema
 
 -- Create users table
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     user_id SERIAL PRIMARY KEY,
-    username VARCHAR(255) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL,
-    full_name VARCHAR(255),
+    username VARCHAR(255) NOT NULL UNIQUE,   -- Updated to 255 characters
+    password TEXT NOT NULL,                  -- Using TEXT type from original schema
+    full_name VARCHAR(255),                  -- Updated to 255 characters
     is_google_user BOOLEAN DEFAULT FALSE,
-    profile_picture VARCHAR(1024),
+    profile_picture TEXT,                    -- Using TEXT type from original schema (renamed from picture)
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Create scans table to store domain monitoring results
-CREATE TABLE scans (
+CREATE TABLE IF NOT EXISTS scans (
     scan_id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-    url VARCHAR(512) NOT NULL,
-    status_code VARCHAR(50),
-    ssl_status VARCHAR(50),
-    expiration_date VARCHAR(50),
-    issuer VARCHAR(255),
+    user_id INTEGER NOT NULL,
+    url VARCHAR(512) NOT NULL,               -- Updated to 512 characters for longer URLs
+    status_code VARCHAR(50),                 -- Updated to 50 characters
+    ssl_status VARCHAR(50),                  -- Updated to 50 characters
+    expiration_date VARCHAR(50),             -- Updated to 50 characters
+    issuer TEXT,                             -- Using TEXT type from original schema
     last_scan_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(user_id, url)
+    CONSTRAINT fk_user 
+        FOREIGN KEY (user_id) 
+        REFERENCES users(user_id) 
+        ON DELETE CASCADE,
+    CONSTRAINT unique_user_url 
+        UNIQUE (user_id, url)
 );
 
 -- Create indexes for performance
-CREATE INDEX idx_scans_user_id ON scans(user_id);
-CREATE INDEX idx_scans_url ON scans(url);
+CREATE INDEX IF NOT EXISTS idx_scans_user_id ON scans(user_id);
+CREATE INDEX IF NOT EXISTS idx_scans_url ON scans(url);
 
 -- Add comments to tables and columns for documentation
 COMMENT ON TABLE users IS 'Stores user account information';
@@ -48,3 +49,4 @@ COMMENT ON COLUMN scans.status_code IS 'HTTP status result (OK/FAILED)';
 COMMENT ON COLUMN scans.ssl_status IS 'SSL certificate status (valid/failed)';
 COMMENT ON COLUMN scans.expiration_date IS 'SSL certificate expiration date';
 COMMENT ON COLUMN scans.issuer IS 'SSL certificate issuer name';
+COMMENT ON COLUMN scans.last_scan_time IS 'Timestamp of the last scan';
